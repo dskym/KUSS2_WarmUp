@@ -11,13 +11,16 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define BUF_LEN 65535
+#define BUF_LEN 65537
+
+char* serverip;
 
 void* callFunc(void* port)
 {
     struct sockaddr_in sock_addr;
     int sock_fd;
     int fd;
+    int recvlen;
     char filename[6];
     char message[BUF_LEN];
     char content[BUF_LEN];
@@ -37,7 +40,7 @@ void* callFunc(void* port)
 
     sock_addr.sin_family = AF_INET;
     sock_addr.sin_port = htons(*(in_port_t*)port);
-    sock_addr.sin_addr.s_addr = inet_addr("10.0.2.15");
+    sock_addr.sin_addr.s_addr = inet_addr(serverip);
 
     if(connect(sock_fd, (struct sockaddr*)&sock_addr, sizeof(struct sockaddr)) < 0)
     {
@@ -45,8 +48,6 @@ void* callFunc(void* port)
         exit(0);
     }
 
-    gettimeofday(&tv, NULL);
-    tm = localtime(&tv.tv_sec);
 
     sprintf(filename, "%u.txt", *(in_port_t*)port);
 
@@ -54,7 +55,11 @@ void* callFunc(void* port)
 
     while(1)
     {
-        recv(sock_fd, message, sizeof(message), 0);
+        gettimeofday(&tv, NULL);
+        tm = localtime(&tv.tv_sec);
+        recvlen = recv(sock_fd, message, sizeof(message), 0);
+        printf("%02d.%04d, %d\n", tm->tm_sec, tv.tv_usec, recvlen); 
+        message[recvlen] = '\0';   
 
         sprintf(content, "%02d:%02d:%02d.%04d %u %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec, tv.tv_usec, strlen(message), message);
 
@@ -69,6 +74,12 @@ int main(int argc, char* argv[])
     pthread_t thread_t[5];
     int status;
     in_port_t port[5] = {11111, 22222, 33333, 44444, 55555};
+    serverip = argv[1];
+
+    if(argv[1] == NULL){
+        printf("Server port is not given\n");
+        exit(-1);
+    }
 
     for(int i=0;i<5;++i)
     {
