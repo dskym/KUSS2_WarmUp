@@ -54,9 +54,9 @@ void* callFunc(void* port)
 
     while(1)
     {
+        recvlen = recv(sock_fd, message, sizeof(message), 0);
         gettimeofday(&tv, NULL);
         tm = localtime(&tv.tv_sec);
-        recvlen = recv(sock_fd, message, sizeof(message), 0);
 
         if(recvlen == 0){
             printf("Server closed %d\n", *(in_port_t*)port);
@@ -68,8 +68,8 @@ void* callFunc(void* port)
 
         printf("%d %02d.%04ld, %d\n", *(in_port_t*)port, tm->tm_sec, tv.tv_usec, recvlen); 
 
-        sprintf(content, "%02d:%02d:%02d.%04ld %lu %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec, tv.tv_usec, strlen(message), message);
         message[recvlen] = '\0';
+        sprintf(content, "%02d:%02d:%02d.%04ld %lu %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec, tv.tv_usec, strlen(message), message);
 
         write(fd, content, strlen(content));
     }
