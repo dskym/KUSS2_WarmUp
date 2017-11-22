@@ -58,15 +58,23 @@ void* callFunc(void* port)
         gettimeofday(&tv, NULL);
         tm = localtime(&tv.tv_sec);
         recvlen = recv(sock_fd, message, sizeof(message), 0);
-        printf("%02d.%04d, %d\n", tm->tm_sec, tv.tv_usec, recvlen); 
+        if(recvlen == 0){
+            printf("server closed %d\n", *(in_port_t*)port);
+            break;
+        }else if(recvlen < 0){
+            printf("Error!\n");
+            break;
+        }
+        printf("%d %02d.%04ld, %d\n", *(in_port_t*)port, tm->tm_sec, tv.tv_usec, recvlen); 
         message[recvlen] = '\0';   
 
-        sprintf(content, "%02d:%02d:%02d.%04d %u %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec, tv.tv_usec, strlen(message), message);
+        sprintf(content, "%02d:%02d:%02d.%04ld %lu %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec, tv.tv_usec, strlen(message), message);
 
         write(fd, content, strlen(content));
     }
 
-    return NULL;
+    pthread_exit((void*)recvlen);
+    //return (void*)(&recvlen);
 }
 
 int main(int argc, char* argv[])
@@ -92,7 +100,9 @@ int main(int argc, char* argv[])
 
     for(int i=0;i<5;++i)
     {
-        pthread_join(thread_t[i], (void**)status);
+        printf("Thread %d joining!\n", i);
+        pthread_join(thread_t[i], (void**)(&status));
+        printf("Thread %d joined! ret: %d\n", i, status);
     }
 
     return 0;
