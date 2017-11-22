@@ -30,8 +30,8 @@ void* callFunc(void* port)
 
     if((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        printf("Client : Can't open stream socket\n");
-        exit(0);
+        printf("Error : Can't open stream socket\n");
+        exit(-1);
     }
 
     printf("port : %u\n", *(in_port_t*)port);
@@ -44,10 +44,9 @@ void* callFunc(void* port)
 
     if(connect(sock_fd, (struct sockaddr*)&sock_addr, sizeof(struct sockaddr)) < 0)
     {
-        printf("Connection failed\n");
-        exit(0);
+        printf("Error: Server Unreachable\n");
+        exit(-1);
     }
-
 
     sprintf(filename, "%u.txt", *(in_port_t*)port);
 
@@ -58,23 +57,24 @@ void* callFunc(void* port)
         gettimeofday(&tv, NULL);
         tm = localtime(&tv.tv_sec);
         recvlen = recv(sock_fd, message, sizeof(message), 0);
+
         if(recvlen == 0){
-            printf("server closed %d\n", *(in_port_t*)port);
+            printf("Server closed %d\n", *(in_port_t*)port);
             break;
         }else if(recvlen < 0){
-            printf("Error!\n");
+            printf("Error: Revc Failed!\n");
             break;
         }
+
         printf("%d %02d.%04ld, %d\n", *(in_port_t*)port, tm->tm_sec, tv.tv_usec, recvlen); 
-        message[recvlen] = '\0';   
 
         sprintf(content, "%02d:%02d:%02d.%04ld %lu %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec, tv.tv_usec, strlen(message), message);
+        message[recvlen] = '\0';
 
         write(fd, content, strlen(content));
     }
 
     pthread_exit((void*)recvlen);
-    //return (void*)(&recvlen);
 }
 
 int main(int argc, char* argv[])
@@ -85,7 +85,8 @@ int main(int argc, char* argv[])
     serverip = argv[1];
 
     if(argv[1] == NULL){
-        printf("Server port is not given\n");
+        printf("Error: Server ip is not given\n");
+        printf("Usage: %s <server-ip>\n", argv[0]);
         exit(-1);
     }
 
